@@ -183,7 +183,7 @@ try
                                     if (CsvDades == "NOVACION" && PPP && (values[20] == "A62733126" || values[20] == "B06787618" || values[20] == "A79787354")) templateId = "52d8073c-93bb-423c-91a2-33f5c050d221";
                                     if (CsvDades == "NOVACION" && !PPP && (values[20] == "A62733126" || values[20] == "B06787618" || values[20] == "A79787354")) templateId = "9ec2c3f1-da0f-4cb8-a91b-9885e027deae";
                                     if (CsvDades == "ACTUALIZACION" && PPP && (values[20] == "A62733126" || values[20] == "B06787618" || values[20] == "A79787354")) templateId = "25ac4256-501c-4649-8165-0b1916c1c1e3";
-                                    tCnt = tCnt + 1;
+                                    tCnt++;
                                     if (templateId != "")
                                     {
                                         string jsonStringSerialized = "";
@@ -208,7 +208,6 @@ try
                                             CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
                                             CloudTable table = tableClient.GetTableReference("TrustCloudFileIds");
                                             _ = table.CreateIfNotExistsAsync();
-                                            //CsvProcesados entity = new CsvProcesados(trustCloudFileId, "rCnt");"Procesado"
                                             TrustCloudFileIds entity = new()
                                             {
                                                 RowKey = "Procesado",
@@ -221,8 +220,6 @@ try
                                         } 
                                         if (!success)
                                         {
-                                            //string newString = jsonresult.Result;
-                                            //string trustCloudFileId = "";
                                             if (newString.Length == 38)
                                             {
                                                 trustCloudFileId = newString.Replace("\"", "");

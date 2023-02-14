@@ -25,8 +25,8 @@ namespace SolicitarFirmas.Models
             int numcol = values.Count();
             string wbody = "";
             var valueslinecapçalera = linecapçalera.Split(';');
-            string strdiaexpiracio = "04/"; //Huy dos digits
-            int diaexpiracio = 4;
+            string strdiaexpiracio = "14/"; //Huy dos digits
+            int diaexpiracio = 14;
             DateTime Avuii = DateTime.Today;
             DateTime Avui = DateTime.Now;
             DateTime expires = DateTime.Today;
