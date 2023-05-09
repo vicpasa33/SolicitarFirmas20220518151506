@@ -1,18 +1,25 @@
 ﻿using Azure.Identity;
 using Azure.Storage.Files.Shares;
 using Azure.Storage.Files.Shares.Models;
+using FluentFTP;
 using MailKit.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Graph;
+using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.WindowsAzure.Storage;
 using MimeKit;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Cms;
+using Renci.SshNet;
 using Serilog;
+using System.Collections;
 using System.Data;
 using System.Globalization;
 using System.Net.Mail;
 using static Org.BouncyCastle.Bcpg.Attr.ImageAttrib;
+using static System.Net.WebRequestMethods;
+using System.IO;
 
 namespace SolicitarFirmas.Models
 {
@@ -70,48 +77,6 @@ namespace SolicitarFirmas.Models
             int Delay = 0;
             int Frequency = 0;
             int Repitions = 0;
-            //if (fCnt == 1 & rCnt == 2)
-            //{
-            //    Warn = 1;
-            //    Delay = 0;
-            //    Frequency = 0;
-            //    Repitions = 3;
-            //}
-            //if (fCnt == 1 & rCnt == 3)
-            //{
-            //    Warn = 2;
-            //    Delay = 0;
-            //    Frequency = 2;
-            //    Repitions = 3;
-            //}
-            //if (fCnt == 1 & rCnt == 4)
-            //{
-            //    Warn = 3;
-            //    Delay = 0;
-            //    Frequency = 2;
-            //    Repitions = 3;
-            //}
-            //if (fCnt == 2 & rCnt == 2)
-            //{
-            //    Warn = 4;
-            //    Delay = 1;
-            //    Frequency = 4;
-            //    Repitions = 3;
-            //}
-            //if (fCnt == 2 & rCnt == 3)
-            //{
-            //    Warn = 3;
-            //    Delay = 3;
-            //    Frequency = 1;
-            //    Repitions = 3;
-            //}
-            //if (fCnt == 2 & rCnt == 4)
-            //{
-            //    Warn = 4;
-            //    Delay = 1;
-            //    Frequency = 2;
-            //    Repitions = 3;
-            //}
             Reminder? DReminder = new();
             DReminder.expireAfter = expireAfter;
             DReminder.expireWarn = Warn;
@@ -142,10 +107,10 @@ namespace SolicitarFirmas.Models
             DSigner[0].id = "33c09020-9b47-4afa-8612-0dcf17bd86e6";
             DSigner[0].mobile = "";
             Dcreateenvelope.signers = DSigner;
-            //wbody = "Aplicar DocuSign a: " + TemplateDocuSign.Replace(".json", "");
+            wbody = "Aplicar DocuSign a: " + CsvDades;
             //deixar com estaba sino funciona
-            //Dcreateenvelope.emailSubject = wbody;
-            Dcreateenvelope.emailSubject = referencia;
+            Dcreateenvelope.emailSubject = wbody;
+            //Dcreateenvelope.emailSubject = referencia;
             FormField[] DFormField = new FormField[numcol];
             for (int i = 0; i < numcol; i++)
             {
@@ -159,9 +124,11 @@ namespace SolicitarFirmas.Models
             Dcreateenvelope.formFields = DFormField;
             Dcreateenvelope.templateId = templateId;
             Customfield[] DCustomfield = new Customfield[1];
-            DCustomfield[0] = new Customfield();
-            DCustomfield[0].name = "policyNumber";
-            DCustomfield[0].value = "04241166";
+            DCustomfield[0] = new Customfield
+            {
+                name = "policyNumber",
+                value = "04241166"
+            };
             Dcreateenvelope.customFields = DCustomfield;
             return Dcreateenvelope;
         }
@@ -169,6 +136,7 @@ namespace SolicitarFirmas.Models
         {
             var scopes = new[] { "https://graph.microsoft.com/.default" };
             ClientSecretCredential credential = new(tenantId, AppclientId, AppclientSecret);
+            //ClientSecretCredential credential = new("be99d803-d172-408b-8aba-61957eaad52b", "2b3bbd22-beba-428b-b8b0-8924c2ceaa61", "b_e8Q~FIT.__OwUmqnO5OpO71Nkk1YAZkQvcTbL7");
             GraphServiceClient graphClient = new(credential, scopes);
             var bodybuilder = "<p>" + ErrField + "</p>";
             if (CsvDades != "") bodybuilder = "<p>" + ErrField + "</p><p>CSV " + CsvDades + " Linea " + NoLineaCsv + "</p>";
@@ -210,11 +178,34 @@ namespace SolicitarFirmas.Models
                 message.Subject = SubjectField + PlantillaBranddoc;
             }
             bool saveToSentItems = true;
-            await graphClient.Users["notificaciones@kintegrations.onmicrosoft.com"]
+            await graphClient.Users["comunicaciones@kintegrations.onmicrosoft.com"]
              .SendMail(message, saveToSentItems)
              .Request()
              .PostAsync();
             return "Ok";
+        }
+        public bool UploadFile(string ftpip, string ftpuser, string ftppasw, string directori, string fitxer)
+        {
+            SftpClient clientsftp = new SftpClient(ftpip, 22, ftpuser, ftppasw);
+            clientsftp.Connect();
+            clientsftp.ChangeDirectory("/Integracion DocuSign-Meta4/" + directori);
+            FileStream uplfileStream = System.IO.File.OpenRead("downloadedCsv.csv");
+            long n = long.Parse(DateTime.Now.ToString("yyyyMMddHHmmss"));
+            fitxer += n.ToString() + ".csv";
+            clientsftp.UploadFile(uplfileStream, fitxer, true);
+            uplfileStream.Close();
+            return true;
+        }
+        public bool insertOperation(string StorageConnectionString, string taule, TrustCloudFileIds contingut)
+        {
+            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
+            CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+            CloudTable table = tableClient.GetTableReference(taule);
+            _ = table.CreateIfNotExistsAsync();
+            //CsvProcesados entity = new();
+            TableOperation insertOperation = TableOperation.Insert(contingut);
+            _ = table.ExecuteAsync(insertOperation);
+            return true;
         }
     }
 }
