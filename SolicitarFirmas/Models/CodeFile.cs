@@ -29,14 +29,10 @@ namespace SolicitarFirmas.Models
         {
             Models.Createenvelope? Dcreateenvelope = new();
             var values = line.Split(';');
-            int numcol = values.Count();
-            string wbody = "";
+            string wbody = "", strdiaexpiracio = "14/";;
             var valueslinecapçalera = linecapçalera.Split(';');
-            string strdiaexpiracio = "14/"; //Huy dos digits
-            int diaexpiracio = 14;
-            DateTime Avuii = DateTime.Today;
-            DateTime Avui = DateTime.Now;
-            DateTime expires = DateTime.Today;
+            int numcol = values.Count(), diaexpiracio = 14, Warn = 1, Delay = 0, Frequency = 0, Repitions = 0;
+            DateTime Avuii = DateTime.Today, Avui = DateTime.Now, expires = DateTime.Today;
             string expiresString, format, output;
             String date;
             CultureInfo provider = CultureInfo.InvariantCulture;
@@ -73,10 +69,6 @@ namespace SolicitarFirmas.Models
                 }
             }
             int expireAfter = (expires - Avui).Days;
-            int Warn = 1;
-            int Delay = 0;
-            int Frequency = 0;
-            int Repitions = 0;
             Reminder? DReminder = new();
             DReminder.expireAfter = expireAfter;
             DReminder.expireWarn = Warn;
@@ -87,15 +79,6 @@ namespace SolicitarFirmas.Models
             Signer[] DSigner = new Signer[1];
             DSigner[0] = new Signer();
             DSigner[0].name = values[0];
-            string referencia = templateId + " C " + fCnt + " " + llancament + " E " + expiresString + " A " + DReminder.expireAfter + " W " + Warn + " D " + Delay + " F " + Frequency + " R " + Repitions;
-            //if (CsvDades == "NOVACION")
-            //{
-            //    DSigner[0].lastName = values[21];
-            //    DSigner[0].documentNumber = values[22];
-            //}
-            //else
-            //{
-            //}
             DSigner[0].lastName = values[21];
             DSigner[0].documentNumber = values[22];
             DSigner[0].email = values[1];
@@ -108,9 +91,7 @@ namespace SolicitarFirmas.Models
             DSigner[0].mobile = "";
             Dcreateenvelope.signers = DSigner;
             wbody = "Aplicar DocuSign a: " + CsvDades;
-            //deixar com estaba sino funciona
             Dcreateenvelope.emailSubject = wbody;
-            //Dcreateenvelope.emailSubject = referencia;
             FormField[] DFormField = new FormField[numcol];
             for (int i = 0; i < numcol; i++)
             {
@@ -136,7 +117,6 @@ namespace SolicitarFirmas.Models
         {
             var scopes = new[] { "https://graph.microsoft.com/.default" };
             ClientSecretCredential credential = new(tenantId, AppclientId, AppclientSecret);
-            //ClientSecretCredential credential = new("be99d803-d172-408b-8aba-61957eaad52b", "2b3bbd22-beba-428b-b8b0-8924c2ceaa61", "b_e8Q~FIT.__OwUmqnO5OpO71Nkk1YAZkQvcTbL7");
             GraphServiceClient graphClient = new(credential, scopes);
             var bodybuilder = "<p>" + ErrField + "</p>";
             if (CsvDades != "") bodybuilder = "<p>" + ErrField + "</p><p>CSV " + CsvDades + " Linea " + NoLineaCsv + "</p>";
@@ -202,7 +182,6 @@ namespace SolicitarFirmas.Models
             CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
             CloudTable table = tableClient.GetTableReference(taule);
             _ = table.CreateIfNotExistsAsync();
-            //CsvProcesados entity = new();
             TableOperation insertOperation = TableOperation.Insert(contingut);
             _ = table.ExecuteAsync(insertOperation);
             return true;
